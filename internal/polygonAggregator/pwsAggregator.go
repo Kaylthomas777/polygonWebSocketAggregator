@@ -12,8 +12,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var allTradesPerWindow = make(map[string][]models.CryptoTrade)
-var collectedTrades []models.CryptoTrade
+var AllTradesPerWindow = make(map[string][]models.CryptoTrade)
+var CollectedTrades []models.CryptoTrade
 
 func Orchestrate(symbol string) {
 	log := logrus.New()
@@ -43,48 +43,42 @@ func Orchestrate(symbol string) {
 	for {
 		select {
 		case <-sigint:
-			//fmt.Println("COLLECTED TRADES: ", collectedTrades)
-			fmt.Println("ALLTRADESPERWINDOW IS: ", allTradesPerWindow)
 			return
 		case <-c.Error():
 			return
 		case t := <-ticker.C:
-			//Every 30 seconds output aggregate!
-            fmt.Println("Tick at", t)
-			printOutAggregate(makeAggregate(collectedTrades, t))
+			PrintOutAggregate(MakeAggregate(CollectedTrades, t))
 		case out, more := <-c.Output():
 			if !more {
 				return
 			}
 			switch out.(type) {
 			case models.CryptoTrade:
-				collectCryptoTrades(out)
-				//log.WithFields(logrus.Fields{"Trades": out}).Info()
+				CollectCryptoTrades(out)
 			}
 		}
 	}
 }
 
-func collectCryptoTrades(trade interface{}) {
+func CollectCryptoTrades(trade interface{}) {
 	if str, ok := trade.(models.CryptoTrade); ok {
-		collectedTrades = append(collectedTrades, str)
+		CollectedTrades = append(CollectedTrades, str)
 	}
 }
 
-func makeAggregate(trades []models.CryptoTrade, ticker time.Time) map[string]any {
+func MakeAggregate(trades []models.CryptoTrade, ticker time.Time) map[string]any {
 	result := make(map[string]any)
 	openPrice, closePrice := getAggregateOpenClosePrice(trades)
 	highPrice, lowPrice := getAggregateHighLowPrice(trades)
 	formatedTime := ticker.Format("2006-1-2 03:04:05")
-	//result["Ticket Symbol"] = str.Pair
 	result["Open Price"] = openPrice
 	result["Close Price"] = closePrice
 	result["High Price"] = highPrice
 	result["Low Price"] = lowPrice
 	result["Volume"] = getAggregateVolume(trades)
 	result["Start Time"] = formatedTime
-	allTradesPerWindow["TRADE WINDOW" + formatedTime] = collectedTrades
-	collectedTrades = []models.CryptoTrade{}
+	AllTradesPerWindow["TRADE WINDOW" + formatedTime] = CollectedTrades
+	CollectedTrades = []models.CryptoTrade{}
 	return result
 }
 
@@ -114,15 +108,10 @@ func sortTradesByTimeStamp(trades []models.CryptoTrade) {
 	})
 }
 
-// func miliSecondsToTime(miliSeconds int) time.Time {
-// 	tm := time.Unix(miliSeconds, 0)
-// 	return tm
-// }
-
-func printOutAggregate(aggregate map[string]any) {
+func PrintOutAggregate(aggregate map[string]any) {
 	t:= aggregate
 	s := fmt.Sprintf(
-		"Start: %v - open: %.2f close: %.2f high: %.2f low: %.2f volume: %d \n",
+		"%v - open: $%.2f close: $%.2f high: $%.2f low: $%.2f volume: %d",
 		 t["Start Time"],  
 		 t["Open Price"], 
 		 t["Close Price"], 

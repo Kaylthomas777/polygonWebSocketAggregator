@@ -12,6 +12,6 @@ func main() {
 	if len(cmdArgs) != 2{
 		fmt.Println("Please provide a single Crypto Symbol")
 	} else {
-		p.Orchestrate(cmdArgs[1])
+		p.Orchestrate(cmdArgs[1] + "-USD")
 	}
 }

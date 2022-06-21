@@ -3,11 +3,14 @@ module github.com/Kaylthomas777/polygonWebSocketAggregator
 go 1.18
 
 require (
-	github.com/gorilla/websocket v1.5.0
+	github.com/matryer/is v1.4.0
 	github.com/sirupsen/logrus v1.8.1
 )
 
-require golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 // indirect
+require (
+	github.com/gorilla/websocket v1.5.0 // indirect
+	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 // indirect
+)
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
