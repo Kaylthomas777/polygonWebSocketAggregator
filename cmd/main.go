@@ -1,8 +1,17 @@
 package main
 
-import p "github.com/Kaylthomas777/polygonWebSocketAggregator/internal/polygonAggregator"
+import (
+	"fmt"
+	"os"
+
+	p "github.com/Kaylthomas777/polygonWebSocketAggregator/internal/polygonAggregator"
+)
 
 func main() {
-	
-	p.OrchestrateEverythin()
+	cmdArgs := os.Args
+	if len(cmdArgs) != 2{
+		fmt.Println("Please provide a single Crypto Symbol")
+	} else {
+		p.Orchestrate(cmdArgs[1])
+	}
 }

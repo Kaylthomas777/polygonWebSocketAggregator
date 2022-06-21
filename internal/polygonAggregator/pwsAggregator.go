@@ -12,11 +12,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var allTrades []map[string][]models.CryptoTrade
-var allAggregates []map[string]any
+var allTradesPerWindow = make(map[string][]models.CryptoTrade)
 var collectedTrades []models.CryptoTrade
 
-func OrchestrateEverythin() {
+func Orchestrate(symbol string) {
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 	log.SetFormatter(&logrus.JSONFormatter{})
@@ -31,7 +30,7 @@ func OrchestrateEverythin() {
 	}
 	defer c.Close()
 
-	_ = c.Subscribe(polygonws.CryptoTrades, "BTC-USD")
+	_ = c.Subscribe(polygonws.CryptoTrades, symbol)
 	if err := c.Connect(); err != nil {
 		log.Error(err)
 		return
@@ -44,14 +43,15 @@ func OrchestrateEverythin() {
 	for {
 		select {
 		case <-sigint:
-			fmt.Println("COLLECTED TRADES: ", collectedTrades)
+			//fmt.Println("COLLECTED TRADES: ", collectedTrades)
+			fmt.Println("ALLTRADESPERWINDOW IS: ", allTradesPerWindow)
 			return
 		case <-c.Error():
 			return
 		case t := <-ticker.C:
 			//Every 30 seconds output aggregate!
             fmt.Println("Tick at", t)
-			printOutAggregate(makeAggregate(collectedTrades))
+			printOutAggregate(makeAggregate(collectedTrades, t))
 		case out, more := <-c.Output():
 			if !more {
 				return
@@ -65,21 +65,17 @@ func OrchestrateEverythin() {
 	}
 }
 
-
 func collectCryptoTrades(trade interface{}) {
 	if str, ok := trade.(models.CryptoTrade); ok {
 		collectedTrades = append(collectedTrades, str)
 	}
 }
 
-//func getAggregateStartTime(){}
-
-
-func makeAggregate(trades []models.CryptoTrade) map[string]any {
+func makeAggregate(trades []models.CryptoTrade, ticker time.Time) map[string]any {
 	result := make(map[string]any)
-	openPrice, closePrice, startTime := getAggregateOpenClosePrice(trades)
+	openPrice, closePrice := getAggregateOpenClosePrice(trades)
 	highPrice, lowPrice := getAggregateHighLowPrice(trades)
-	formatedTime := miliSecondsToTime(startTime).Format("2006-1-2 03:04:05")
+	formatedTime := ticker.Format("2006-1-2 03:04:05")
 	//result["Ticket Symbol"] = str.Pair
 	result["Open Price"] = openPrice
 	result["Close Price"] = closePrice
@@ -87,17 +83,14 @@ func makeAggregate(trades []models.CryptoTrade) map[string]any {
 	result["Low Price"] = lowPrice
 	result["Volume"] = getAggregateVolume(trades)
 	result["Start Time"] = formatedTime
-	allAggregates = append(allAggregates, result)
+	allTradesPerWindow["TRADE WINDOW" + formatedTime] = collectedTrades
 	collectedTrades = []models.CryptoTrade{}
-
-	
-	//allTrades[formatedTime] = collectedTrades
 	return result
 }
 
-func getAggregateOpenClosePrice(trades []models.CryptoTrade) (float64, float64, int64) {
+func getAggregateOpenClosePrice(trades []models.CryptoTrade) (float64, float64) {
 	sortTradesByTimeStamp(trades)
-	return trades[0].Price, trades[len(trades)- 1].Price, trades[0].Timestamp
+	return trades[0].Price, trades[len(trades)- 1].Price
 }
 
 func getAggregateHighLowPrice(trades []models.CryptoTrade) (float64, float64) {
@@ -121,17 +114,13 @@ func sortTradesByTimeStamp(trades []models.CryptoTrade) {
 	})
 }
 
-func miliSecondsToTime(miliSeconds int64) time.Time {
-	tm := time.Unix(miliSeconds, 0)
-	return tm
-}
-
-
-
+// func miliSecondsToTime(miliSeconds int) time.Time {
+// 	tm := time.Unix(miliSeconds, 0)
+// 	return tm
+// }
 
 func printOutAggregate(aggregate map[string]any) {
 	t:= aggregate
-	//13:00:00 - open: $79.00, close: $80.00, high: $80.50, low: $78.00, volume: 200
 	s := fmt.Sprintf(
 		"Start: %v - open: %.2f close: %.2f high: %.2f low: %.2f volume: %d \n",
 		 t["Start Time"],  
@@ -144,19 +133,4 @@ func printOutAggregate(aggregate map[string]any) {
 	fmt.Println(s)
 }
 
-
-// func transformAggregate(aggregate interface{}) map[string]any {
-// 	result := make(map[string]any) 
-// 	if str, ok := aggregate.(models.CryptoTrade); ok {
-// 		result["Ticket Symbol"] = str.Pair
-// 		result["Open Price"] = str.Open
-// 		result["Close Price"] = str.Close
-// 		result["High Price"] = str.High
-// 		result["Low Price"] = str.Low
-// 		result["Volume"] = str.Volume
-// 		result["Start Time"] = miliSecondsToTime(str.StartTimestamp).Format("2006-1-2 03:04:05")
-// 		result["End Time"] = miliSecondsToTime(str.EndTimestamp).Format("2006-1-2 03:04:05")
-// 	} 
-// 	return result
-// }
 
