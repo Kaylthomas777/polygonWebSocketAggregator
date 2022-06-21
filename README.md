@@ -9,5 +9,5 @@
 
 ### Run Program
 
-- ./main.go <Valid Crypto Symbol>
+- ./main <Valid Crypto Symbol>
 - The string "-USD" is automatically appended to the symbols provided.
