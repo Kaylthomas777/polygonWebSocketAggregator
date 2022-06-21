@@ -89,6 +89,7 @@ func makeAggregate(trades []models.CryptoTrade) map[string]any {
 	result["Start Time"] = formatedTime
 	allAggregates = append(allAggregates, result)
 	collectedTrades = []models.CryptoTrade{}
+
 	
 	//allTrades[formatedTime] = collectedTrades
 	return result
