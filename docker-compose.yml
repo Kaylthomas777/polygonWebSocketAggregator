@@ -1,0 +1,29 @@
+version: "3.7"
+services:
+  polygonWebSocketAggregator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_PORT: ${PORT}
+    image: identity:latest
+    depends_on:
+      - polyWebSockAgg.db
+    container_name: polygonWebSocketAggregator
+    volumes:
+      - ./:/root/app
+    env_file:
+      - .env
+    ports:
+      - ${HOST_PORT}:${PORT}
+
+  polyWebSockAgg.db:
+    image: mysql:8.0.26
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PWD}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PWD}
+      MYSQL_DATABASE: ${DB_SCHEMA}
+    ports:
+      - "3306:3306"
